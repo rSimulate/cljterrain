@@ -31,6 +31,8 @@
 ;; Connect to MongoDB
 (mg/connect-via-uri! (or (System/getenv "MONGOLAB_URI") "mongodb://localhost/cljterrain"))
 
+;; Begin MetaSim Resources
+
 ;; Endpoint resource
 (defn get-entrypoint [version]
   (if (= version "1.0")
@@ -97,10 +99,16 @@
       {:status 203})
     {:status 404}))
 
-(defn get-simulation-world-texture [version simulationIdStr]
+
+;; Simulation data
+(defn get-simulation-world-texture [version simulationIdStr bodyid resource]
   (if (= version "1.0")
-    (let [simulationId (ObjectId. simulationIdStr)]
-      (mc/find-maps "simulations" { :_id simulationId})
+    (let [simulationId (ObjectId. simulationIdStr)
+          simulations (mc/find-maps "simulations" { :_id simulationId})]
+      (if (> (count simulations) 0)
+        (let [simulation (first simulations)]
+          nil)
+        {:status 404})
       {:status 203})
     {:status 404}))
 
@@ -113,7 +121,8 @@
                                          serverName :serverName}
         (add-simulation version (json/read-str (slurp body)) serverName))
   (DELETE "/metasim/:version/simulations/:id" [version id] (delete-simulation version id))
-  (GET "/metasim/:version/simulations/:id/worldtexture.jpg" [version id] (get-simulation-world-texture version id))
+  (GET "/metasim/:version/simulations/:id/bodies/:bodyid/terrain/:resource" [version id bodyid resource]
+       (get-simulation-world-texture version id bodyid resource))
   (route/not-found "Could not find resource"))
 
 (def app
